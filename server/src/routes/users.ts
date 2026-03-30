@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import type { auth } from "@server/auth";
 import db from "@server/db";
-import { addresses, hackatimeProjectLinks, projects, shopOrders, users } from "@server/db/schema";
+import { addresses, hackatimeProjectLinks, projects, shopOrders, users, userStats } from "@server/db/schema";
 import hackatime from "@server/hackatime";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { Hono } from "hono";
@@ -42,9 +42,22 @@ export const usersRoutes = new Hono<{
 		}, 200)
 
 	})
+	.get("/stats", async (c) => {
+		const user = c.get("user")
+		if (!user) return c.json({ message: "Unauthorized" }, 401)
+
+		const res = await db.select({ votesCast: userStats.votesCast }).from(userStats).where(eq(userStats.userId, user.id))
+
+		if (res.length == 0) {
+			return c.json({ message: "Not found" }, 404)
+		}
+
+
+		return c.json({ stats: res[0]! }, 200)
+	})
+
 	.post("/addresses", zValidator("json", NewAddressSchema), async (c) => {
 		const user = c.get("user")
-
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const data = c.req.valid("json")

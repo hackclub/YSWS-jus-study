@@ -8,6 +8,7 @@ import { shopRoute } from "./routes/shop";
 import { reviewsRoute } from "./routes/reviews";
 import { shipsRoute } from "./routes/ships";
 import { voteRoute } from "./routes/vote";
+import { adminRoute } from "./routes/admin";
 
 const app = new Hono<{
 	Variables: {
@@ -54,6 +55,7 @@ const app = new Hono<{
 	.route("/reviews", reviewsRoute)
 	.route("/ships", shipsRoute)
 	.route("/vote", voteRoute)
+	.route("/admin", adminRoute)
 
 app.onError((err, c) => {
 	console.error(`${err}`)

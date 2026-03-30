@@ -1,6 +1,6 @@
 import type { auth } from "@server/auth";
 import db from "@server/db";
-import { devlogs, hackatimeProjectLinks, projects, projectShips, projectStats } from "@server/db/schema";
+import { devlogs, hackatimeProjectLinks, projects, projectShips, projectStats, userStats } from "@server/db/schema";
 import { desc, eq, getTableColumns } from "drizzle-orm";
 import { Hono } from "hono";
 import { shipReviewsRoute } from "./reviews";
@@ -136,4 +136,70 @@ export const projectShipRoute = new Hono<{
 		const ships = await db.select().from(projectShips).where(eq(projectShips.projectId, id)).orderBy(desc(projectShips.createdAt))
 
 		return c.json({ ships: ships }, 200)
+	})
+	.post("payout", async (c) => {
+		const user = c.get("user")
+		if (!user) return c.json({ message: "Unauthorized" }, 401)
+
+		return c.json({ message: "Currently disabled!" }, 400)
+		// const id = c.req.param("id")
+		// if (!id) {
+		// 	return c.json({ message: "Bad request" }, 400)
+		// }
+		//
+		// const projectRes = await db
+		// 	.select()
+		// 	.from(projects)
+		// 	.where(eq(projects.id, id))
+		// if (projectRes.length == 0) {
+		// 	return c.json({ message: "Not found" }, 404)
+		// }
+		// const project = projectRes[0]!
+		// if (project.creatorId != user.id) {
+		// 	return c.json({ message: "Forbidden" }, 403)
+		// }
+		// const activeShips = await db
+		// 	.select()
+		// 	.from(projectShips)
+		// 	.where(
+		// 		and(
+		// 			eq(projectShips.projectId, id),
+		// 			notInArray(projectShips.state, ["finished", "failed"])
+		// 		)
+		// 	)
+		// if (activeShips.length == 0) {
+		// 	return c.json({ message: "No active ships found" }, 404)
+		// }
+		// const ship = activeShips[0]!
+		// if (ship.state != "pre-payout") {
+		// 	return c.json({ message: "Active ship is in the wrong state" }, 400)
+		// }
+		//
+		// const uStats = await db.select().from(userStats).where(eq(userStats.userId, user.id))
+		// if (uStats.length == 0) {
+		// 	return c.json({ message: "Something went wrong" }, 500)
+		// }
+		//
+		// await db.transaction(async (tx) => {
+		// 	const [nRes] = await db
+		// 		.select({ nFinishedShips: count() })
+		// 		.from(projectShips)
+		// 		.innerJoin(projects,
+		// 			eq(projects.id, projectShips.projectId))
+		// 		.where(and(
+		// 			eq(projects.creatorId, user.id),
+		// 			eq(projectShips.state, "finished")
+		// 		))
+		// 	if (!nRes) {
+		// 		tx.rollback()
+		// 	}
+		// 	const REQUIRED_VOTES = (nRes!.nFinishedShips + 1) * VOTES_FOR_PAYOUT_PER_SHIP
+		// 	if (REQUIRED_VOTES > (uStats[0]?.votesCast || 0)) {
+		// 		tx.rollback()
+		// 	}
+		//
+		// 	await db.update(projectShips).set({ state: bumpStatus("pre-payout") })
+		//
+		// 	// award coins!
+		// })
 	})

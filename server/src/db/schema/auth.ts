@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { text, timestamp, boolean, index, pgTable, integer, pgEnum } from "drizzle-orm/pg-core";
 import { addresses, projectReviews, shopOrders } from "./main";
+import { userStats } from "./voting";
 
 export const typeValues = ["participant", "reviewer", "fraud", "admin"] as const
 export const userType = pgEnum("user_types", typeValues)
@@ -86,12 +87,13 @@ export const verifications = pgTable(
 	(table) => [index("verifications_identifier_idx").on(table.identifier)],
 );
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
 	sessions: many(sessions),
 	accounts: many(accounts),
 	addresses: many(addresses),
 	orders: many(shopOrders),
-	reviews: many(projectReviews)
+	reviews: many(projectReviews),
+	userStats: one(userStats)
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

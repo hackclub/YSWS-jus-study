@@ -1,3 +1,4 @@
+import { probit } from "simple-statistics"
 // half of theoretical max
 export const STAR_BUDGET = 40
 export const SIGMA_TRESHOLD = 2.5; // about 15 rounds depending on consistency
@@ -40,4 +41,19 @@ export function weightedSample<T extends { sigma: number }>(
 	}
 
 	return selected;
+}
+
+
+const MU = 0 // adjust
+const SIGMA = 1 // adjust
+function bphQuantileFn(relOrdinal: number) {
+	relOrdinal = Math.max(1e-6, Math.min(1 - 1e-6, relOrdinal));
+	return Math.exp(MU + SIGMA * probit(relOrdinal));
+}
+
+
+export function calculatePayout(ordinal: number, reviewBphBoost: number, timeLogged: number) {
+	const MAX_ORDINAL = 50
+	return (bphQuantileFn(ordinal / MAX_ORDINAL) + reviewBphBoost) * timeLogged
+
 }

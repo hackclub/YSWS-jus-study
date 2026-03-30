@@ -2,18 +2,18 @@ import { zValidator } from "@hono/zod-validator";
 import type { auth } from "@server/auth";
 import db from "@server/db";
 import { projects, projectShips } from "@server/db/schema/main";
-import { projectStats, ratings, votingRoundProjects, votingRounds } from "@server/db/schema/voting";
+import { projectStats, ratings, userStats, votingRoundProjects, votingRounds } from "@server/db/schema/voting";
 import { balanceCategories, SIGMA_TRESHOLD, STAR_BUDGET, weightedSample } from "@server/voting";
-import { and, desc, eq, getTableColumns, inArray, isNull, ne, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { publishVoteSchema } from "@shared/validation/votes"
 import { uniqueEntriesEqual } from "@server/lib/arr";
 import { rating, rate, ordinal } from "openskill"
 import { bumpStatus } from "@server/lib/ships";
-import { users } from "@server/db/schema";
 import { rankingsRoute } from "./rankings";
 
 const CANDIDATE_POOL_SIZE = 50;
+export const VOTES_FOR_PAYOUT_PER_SHIP = 10;
 
 export const voteRoute = new Hono<{
 	Variables: {
@@ -147,12 +147,16 @@ export const voteRoute = new Hono<{
 			await tx.update(votingRounds).set({ completedAt: new Date() }).where(eq(votingRounds.id, current.id))
 			await tx.insert(ratings).values(data.ratings.map((c) => ({ ...c, roundId: current.id })))
 
+
+			const uStatsRes = await tx.update(userStats).set({ votesCast: sql`${userStats.votesCast} + 1` }).where(eq(userStats.userId, user.id)).returning()
 			await Promise.all(
 				data.ratings.map(async (r, i) => {
 					const updated = updatedTeams[i]![0]!
 					if (updated.sigma < SIGMA_TRESHOLD) {
 						await tx.update(projectShips).set({ state: bumpStatus("voting") }).where(eq(projectShips.projectId, r.projectId))
 					}
+
+
 					await tx.update(projectStats)
 						.set({ mu: updated.mu, sigma: updated.sigma, ordinal: ordinal(updated), matchups: sql`${projectStats.matchups} + 1` })
 						.where(eq(projectStats.projectId, r.projectId))

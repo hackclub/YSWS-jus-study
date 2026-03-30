@@ -6,7 +6,7 @@ import { useErrors } from "@client/lib/context/ErrorContext";
 import { formatDate, secondsToFormatTime } from "@client/lib/time";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono";
-import { Ship } from "lucide-react";
+import { DollarSign, Ship } from "lucide-react";
 import { Navigate, useParams } from "react-router"
 
 type DevlogResponse = InferResponseType<typeof client.api.projects[":id"]["devlogs"]["$get"]>
@@ -139,8 +139,7 @@ export default function ProjectDetails() {
 			return data.ships
 		},
 	})
-	const { mutate: shipProject
-	} = useMutation({
+	const { mutate: shipProject } = useMutation({
 		mutationFn: async () => {
 			const res = await client.api.projects[":id"].ships.$post({
 				param: { id: projectId }
@@ -167,9 +166,14 @@ export default function ProjectDetails() {
 			)
 			}
 			{isOwner() && (
-				<Button onClick={() => {
-					shipProject()
-				}}><Ship /></Button>
+				<div>
+					<Button onClick={() => {
+						shipProject()
+					}}><Ship /></Button>
+					<Button onClick={() => {
+
+					}} disabled><DollarSign /></Button>
+				</div>
 			)}
 			{devlogs && ships && (
 				<div className="w-full overflow-x-hidden flex flex-col gap-4 items-center">

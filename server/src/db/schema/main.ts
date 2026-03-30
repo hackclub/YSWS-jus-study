@@ -85,7 +85,7 @@ export const addressesRelations = relations(addresses, ({ one, many }) => ({
 export const shopItems = pgTable("shop_items", {
 	id: uuid().defaultRandom().primaryKey(),
 	createdAt: timestamp().defaultNow().notNull(),
-	quantity: integer(), // null means unlimited?
+	quantity: integer(), // null means unlimited
 	name: text().notNull(),
 	description: text().notNull(),
 	price: integer().notNull(),
@@ -150,7 +150,7 @@ export const projectReviewRelations = relations(projectReviews, ({ one }) => ({
 }))
 
 
-export const shipStatusValues = ["pre-initial", "voting", "pre-fraud", "failed", "finished"] as const
+export const shipStatusValues = ["pre-initial", "voting", "pre-fraud", "failed", "pre-payout", "finished"] as const
 export const shipStatus = pgEnum("ship_status", shipStatusValues)
 export type ProjectShipStatus = typeof shipStatus.enumValues[number]
 
@@ -161,6 +161,7 @@ export const projectShips = pgTable("project_ship", {
 	totalTime: integer().notNull(),
 	loggedTime: integer().notNull(),
 	state: shipStatus().notNull().default("pre-initial").notNull(),
+	payout: integer(),
 	projectId: uuid().references(() => projects.id, { onDelete: "cascade" }).notNull()
 })
 

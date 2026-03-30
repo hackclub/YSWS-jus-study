@@ -50,6 +50,11 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
 	project: one(projects, { fields: [ratings.projectId], references: [projects.id] }),
 }));
 
+export const userStats = pgTable("user_stats", {
+	userId: text().primaryKey().references(() => users.id, { onDelete: "cascade" }),
+	votesCast: integer().notNull().default(0)
+})
+
 export const projectStats = pgTable("project_stats", {
 	projectId: uuid().references(() => projects.id, { onDelete: "cascade" }).primaryKey(),
 
@@ -62,3 +67,7 @@ export const projectStats = pgTable("project_stats", {
 	matchups: integer().notNull().default(0),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const userStatsRelations = relations(userStats, ({ one }) => ({
+	user: one(users, { fields: [userStats.userId], references: [users.id] })
+}))

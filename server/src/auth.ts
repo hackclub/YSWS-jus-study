@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { genericOAuth } from "better-auth/plugins";
 import db from "./db";
-import { accounts, sessions, typeValues, users, verifications } from "./db/schema";
+import { accounts, sessions, typeValues, users, userStats, verifications } from "./db/schema";
 import { getSlackUserInformation } from "./lib/slack";
 
 
@@ -34,6 +34,15 @@ export const auth = betterAuth({
 		},
 		usePlural: true
 	}),
+	databaseHooks: {
+		user: {
+			create: {
+				after: async (user) => {
+					await db.insert(userStats).values({ userId: user.id })
+				}
+			}
+		}
+	},
 	trustedOrigins: [
 		CORS_ORIGIN,
 	],
@@ -66,7 +75,7 @@ export const auth = betterAuth({
 					}
 				}
 			],
-		})
+		}),
 	],
 	user: {
 		additionalFields: {
