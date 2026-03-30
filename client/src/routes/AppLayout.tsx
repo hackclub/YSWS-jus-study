@@ -29,6 +29,9 @@ export default function AppLayout() {
 					{data.user.type != "participant" && (
 						<Link className="" route="/reviews" name="Reviews" />
 					)}
+					{data.user.type == "admin" && (
+						<Link className="" route="/admin" name="Admin" />
+					)}
 				</ul>
 				<UserIcon />
 			</header>
