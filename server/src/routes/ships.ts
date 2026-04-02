@@ -1,11 +1,10 @@
 import type { auth } from "@server/auth";
 import db from "@server/db";
-import { devlogs, hackatimeProjectLinks, projects, projectShips, projectStats, userStats } from "@server/db/schema";
+import { devlogs, hackatimeProjectLinks, projects, projectShips, projectStats } from "@server/db/schema";
 import { desc, eq, getTableColumns } from "drizzle-orm";
 import { Hono } from "hono";
 import { shipReviewsRoute } from "./reviews";
 import { singleProjectTime } from "@server/hackatime/client";
-
 
 export const shipsRoute = new Hono<{
 	Variables: {
@@ -164,23 +163,20 @@ export const projectShipRoute = new Hono<{
 		// 	.where(
 		// 		and(
 		// 			eq(projectShips.projectId, id),
-		// 			notInArray(projectShips.state, ["finished", "failed"])
+		// 			eq(projectShips.state, "pre-payout")
 		// 		)
 		// 	)
 		// if (activeShips.length == 0) {
-		// 	return c.json({ message: "No active ships found" }, 404)
+		// 	return c.json({ message: "No active pre-payout ships found" }, 404)
 		// }
 		// const ship = activeShips[0]!
-		// if (ship.state != "pre-payout") {
-		// 	return c.json({ message: "Active ship is in the wrong state" }, 400)
-		// }
 		//
-		// const uStats = await db.select().from(userStats).where(eq(userStats.userId, user.id))
-		// if (uStats.length == 0) {
+		// const [uStats] = await db.select().from(userStats).where(eq(userStats.userId, user.id))
+		// if (!uStats) {
 		// 	return c.json({ message: "Something went wrong" }, 500)
 		// }
 		//
-		// await db.transaction(async (tx) => {
+		// return await db.transaction(async (tx) => {
 		// 	const [nRes] = await db
 		// 		.select({ nFinishedShips: count() })
 		// 		.from(projectShips)
@@ -192,14 +188,33 @@ export const projectShipRoute = new Hono<{
 		// 		))
 		// 	if (!nRes) {
 		// 		tx.rollback()
+		// 		return c.json({ message: "Bad request" }, 400)
 		// 	}
-		// 	const REQUIRED_VOTES = (nRes!.nFinishedShips + 1) * VOTES_FOR_PAYOUT_PER_SHIP
-		// 	if (REQUIRED_VOTES > (uStats[0]?.votesCast || 0)) {
+		// 	const REQUIRED_VOTES = (nRes.nFinishedShips + 1) * VOTES_FOR_PAYOUT_PER_SHIP
+		// 	if (REQUIRED_VOTES > uStats.votesCast) {
 		// 		tx.rollback()
+		// 		return c.json({ message: "More votes needed to unlock payment" }, 400)
 		// 	}
 		//
-		// 	await db.update(projectShips).set({ state: bumpStatus("pre-payout") })
 		//
-		// 	// award coins!
+		// 	const [shipRes] = await db
+		// 		.update(projectShips)
+		// 		.set({ state: bumpStatus("pre-payout") })
+		// 		.where(and(
+		// 			eq(projectShips.id, ship.id),
+		// 			eq(projectShips.state, "pre-payout")
+		// 		)).returning()
+		// 	if (!shipRes || !shipRes.payout) {
+		// 		tx.rollback()
+		// 		return c.json({ message: "Bad request" }, 400)
+		// 	}
+		//
+		// 	await db
+		// 		.update(users)
+		// 		.set({ coins: sql<number>`${users.coins} + ${shipRes.payout}` })
+		// 		.where(eq(users.id, user.id))
+		//
+		// 	return c.json({ message: "Coins awarded", amount: shipRes.payout }, 201)
+		//
 		// })
 	})

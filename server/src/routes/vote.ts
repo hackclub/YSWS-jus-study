@@ -3,7 +3,7 @@ import type { auth } from "@server/auth";
 import db from "@server/db";
 import { projects, projectShips } from "@server/db/schema/main";
 import { projectStats, ratings, userStats, votingRoundProjects, votingRounds } from "@server/db/schema/voting";
-import { balanceCategories, SIGMA_TRESHOLD, STAR_BUDGET, weightedSample } from "@server/voting";
+import { balanceCategories, calculatePayout, SIGMA_TRESHOLD, STAR_BUDGET, weightedSample } from "@server/voting";
 import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { publishVoteSchema } from "@shared/validation/votes"
@@ -143,29 +143,55 @@ export const voteRoute = new Hono<{
 
 		const updatedTeams = rate(teams, { score: scores })
 
-		await db.transaction(async (tx) => {
+		return await db.transaction(async (tx) => {
 			await tx.update(votingRounds).set({ completedAt: new Date() }).where(eq(votingRounds.id, current.id))
 			await tx.insert(ratings).values(data.ratings.map((c) => ({ ...c, roundId: current.id })))
 
 
-			const uStatsRes = await tx.update(userStats).set({ votesCast: sql`${userStats.votesCast} + 1` }).where(eq(userStats.userId, user.id)).returning()
-			await Promise.all(
+			await tx.update(userStats).set({ votesCast: sql`${userStats.votesCast} + 1` }).where(eq(userStats.userId, user.id))
+			return await Promise.all(
 				data.ratings.map(async (r, i) => {
 					const updated = updatedTeams[i]![0]!
+					const updatedOrdinal = ordinal(updated)
 					if (updated.sigma < SIGMA_TRESHOLD) {
-						await tx.update(projectShips).set({ state: bumpStatus("voting") }).where(eq(projectShips.projectId, r.projectId))
+						const [ps] = await tx
+							.select({ timeLogged: projectShips.loggedTime })
+							.from(projectShips)
+							.where(eq(projectShips.projectId, r.projectId))
+						if (!ps) {
+							tx.rollback()
+							Promise.reject()
+							return
+						}
+						await tx
+							.update(projectShips)
+							.set({
+								state: bumpStatus("voting"),
+								payout: calculatePayout(updatedOrdinal, 0, ps.timeLogged)
+							})
+							.where(eq(projectShips.projectId, r.projectId))
 					}
 
-
 					await tx.update(projectStats)
-						.set({ mu: updated.mu, sigma: updated.sigma, ordinal: ordinal(updated), matchups: sql`${projectStats.matchups} + 1` })
+						.set({
+							mu: updated.mu,
+							sigma: updated.sigma,
+							ordinal: updatedOrdinal,
+							matchups: sql`${projectStats.matchups} + 1`
+						})
 						.where(eq(projectStats.projectId, r.projectId))
 				})
 			)
+				.then(() => {
+					return c.json({ message: "Voted successfully" }, 200)
+				})
+				.catch(() => {
+					return c.json({ message: "Bad request" }, 400)
+				})
 		})
 
-		return c.json({ message: "Voted successfully" }, 200)
 	})
+
 	//get current session
 	.get("/rounds/active", async (c) => {
 		const user = c.get("user")

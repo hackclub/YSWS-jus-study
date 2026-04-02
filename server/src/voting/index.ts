@@ -44,16 +44,27 @@ export function weightedSample<T extends { sigma: number }>(
 }
 
 
-const MU = 0 // adjust
-const SIGMA = 1 // adjust
-function bphQuantileFn(relOrdinal: number) {
-	relOrdinal = Math.max(1e-6, Math.min(1 - 1e-6, relOrdinal));
-	return Math.exp(MU + SIGMA * probit(relOrdinal));
+
+export function calculatePayout(ordinal: number, reviewBphBoost: number, timeLoggedInSeconds: number) {
+	const timeLeftAfterFirst10h = Math.max(timeLoggedInSeconds - 10 * 3600, 0) // in s
+	const timeFirst10h = Math.min(10 * 3600, Math.max(timeLoggedInSeconds, 0)) // in s
+
+	return (
+		(multiplierPerHour(ordinal) + reviewBphBoost) * timeLeftAfterFirst10h
+		+ first10hMultiplierPerHour(ordinal) * timeFirst10h
+	) / 3600 // per hour instead of per s
 }
 
+const MAX_PAYOUT = 1.3; // in books
+const MIN_PAYOUT = 0.7;
+const MAX_SCORE = 50;
+const MIN_SCORE = SIGMA_TRESHOLD * -3;
 
-export function calculatePayout(ordinal: number, reviewBphBoost: number, timeLogged: number) {
-	const MAX_ORDINAL = 50
-	return (bphQuantileFn(ordinal / MAX_ORDINAL) + reviewBphBoost) * timeLogged
+export function multiplierPerHour(ordinal: number) {
+	return (MAX_PAYOUT - MIN_PAYOUT) / (MAX_SCORE - MIN_SCORE) * (ordinal - MIN_SCORE) + MIN_PAYOUT
+}
 
+const MAX_PAYOUT_F = 1.0; // in books; for first 10h
+export function first10hMultiplierPerHour(ordinal: number) {
+	return (MAX_PAYOUT_F - MIN_PAYOUT) / (MAX_SCORE - MIN_SCORE) * (ordinal - MIN_SCORE) + MIN_PAYOUT
 }
