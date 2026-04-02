@@ -55,6 +55,7 @@ function App() {
 							<Route path="/reviews/:id" element={<ProjectReview />} />
 							<Route path="/rankings" element={<RankingPage />} />
 							<Route path="/admin" element={<AdminPage />} />
+							<Route path="/admin/user-history/:id" element={<AdminPage />} />
 						</Route>
 					</Route>
 				</Routes>

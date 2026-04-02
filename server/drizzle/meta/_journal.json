@@ -64,6 +64,27 @@
       "when": 1772649819902,
       "tag": "0008_heavy_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774893610316,
+      "tag": "0009_naive_mauler",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775121677655,
+      "tag": "0010_add_user_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775121801046,
+      "tag": "0011_sleepy_landau",
+      "breakpoints": true
     }
   ]
 }

@@ -73,8 +73,15 @@ class HackatimeClient {
 				"authorization": `Bearer ${this.apiKey}`
 			}
 		})
+		const contentType = res.headers.get("content-type")
+		if (!contentType || !contentType.includes("application/json")) {
+			const body = await res.text()
+			console.log(body)
+			return { success: false, error: "invalid response format" }
+		}
 
 		const body = await res.json()
+
 
 		const parsed = StatsResponseSchema.safeParse(body)
 		if (!parsed.success) {
@@ -83,6 +90,7 @@ class HackatimeClient {
 			return { success: false, error: "invalid response format" }
 		}
 		return parsed.data
+
 	}
 
 }

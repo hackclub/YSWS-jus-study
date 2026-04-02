@@ -1,0 +1,2 @@
+ALTER TABLE "users" drop column "search_vector";--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN "search_vector" "tsvector" GENERATED ALWAYS AS (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(id::text, '')) || ' ' || coalesce(slack_id, '') || ' ' || coalesce(nickname, '')) STORED;

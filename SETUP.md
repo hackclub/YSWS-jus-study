@@ -65,6 +65,10 @@ bun run build:client  # Build the React frontend
 bun run build:server  # Build the Hono backend
 ```
 
+
+## Databases
+You can use drizzle-kit to migrate the db. the `push` command probably wont work
+
 ### Deployment
 #### Cloudflare
 1. Do this

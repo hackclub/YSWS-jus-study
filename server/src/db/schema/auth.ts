@@ -1,8 +1,14 @@
-import { relations } from "drizzle-orm";
-import { text, timestamp, boolean, index, pgTable, integer, pgEnum } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { text, timestamp, boolean, index, pgTable, integer, pgEnum, customType } from "drizzle-orm/pg-core";
 import { addresses, projectReviews, shopOrders } from "./main";
 import { userStats } from "./voting";
 
+
+const tsvector = customType<{ data: string }>({
+	dataType() {
+		return "tsvector";
+	},
+});
 export const typeValues = ["participant", "reviewer", "fraud", "admin"] as const
 export const userType = pgEnum("user_types", typeValues)
 export type UserType = typeof userType.enumValues[number]
@@ -24,8 +30,15 @@ export const users = pgTable("users", {
 	type: userType().default("participant").notNull(),
 	banned: boolean().default(false),
 	coins: integer().notNull().default(0),
+	searchVector: tsvector("search_vector")
+		.generatedAlwaysAs(
+			() => sql`to_tsvector('english', coalesce(name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(id::text, '')) || ' ' || coalesce(slack_id, '') || ' ' || coalesce(nickname, '')`
+		),
 },
-	(table) => [index("users_slack_id_idx").on(table.slackId)],
+	(table) => [
+		index("users_slack_id_idx").on(table.slackId),
+		index("users_search_idx").using("gin", table.searchVector)
+	],
 );
 
 export const sessions = pgTable(

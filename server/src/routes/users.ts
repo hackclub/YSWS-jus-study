@@ -3,9 +3,16 @@ import type { auth } from "@server/auth";
 import db from "@server/db";
 import { addresses, hackatimeProjectLinks, projects, shopOrders, users, userStats } from "@server/db/schema";
 import hackatime from "@server/hackatime";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { NewAddressSchema } from "@shared/validation/addresses"
+import z from "zod";
+
+const searchSchema = z.object({
+	q: z.string().min(1).max(100),
+	limit: z.coerce.number().int().min(1).max(50).default(20),
+	offset: z.coerce.number().int().min(0).default(0),
+});
 
 export const usersRoutes = new Hono<{
 	Variables: {
@@ -101,3 +108,36 @@ export const usersRoutes = new Hono<{
 
 		return c.json({ message: "User successfully banned!", alreadyFulfilledOrders: alreadyFulfilled })
 	})
+	.get("/search", zValidator("query", searchSchema), async (c) => {
+		const user = c.get("user")
+		if (!user || user.type != "admin") return c.json({ message: "Unauthorized" }, 401)
+
+		const { q, limit, offset } = c.req.valid("query");
+
+		const tsQuery = q
+			.trim()
+			.split(/\s+/)
+			.map((word) => `${word}:*`) // this does prefixes as well
+			.join(" & ");
+
+		const results = await db
+			.select({
+				id: users.id,
+				name: users.name,
+				nickname: users.nickname,
+				slackId: users.slackId,
+				type: users.type,
+				image: users.image,
+				rank: sql<number>`ts_rank(search_vector, to_tsquery('english', ${tsQuery}))`,
+			})
+			.from(users)
+			.where(
+				sql`search_vector @@ to_tsquery('english', ${tsQuery})`
+			)
+			.orderBy(desc(sql`ts_rank(search_vector, to_tsquery('english', ${tsQuery}))`))
+			.limit(limit)
+			.offset(offset);
+
+		return c.json({ results, query: q }, 200);
+	}
+	);
