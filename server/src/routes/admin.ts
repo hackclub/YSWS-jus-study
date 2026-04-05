@@ -3,15 +3,12 @@ import db from "@server/db";
 import { projectShips } from "@server/db/schema";
 import { avg, count, max, min, sum } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Env } from ".."
 
-export const adminRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const adminRoute = new Hono<Env>()
 	.get("/stats", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 		if (user.type != "admin") return c.json({ message: "Forbidden" }, 403)
@@ -27,7 +24,7 @@ export const adminRoute = new Hono<{
 			totalLoggedShipTime: sum(projectShips.loggedTime).mapWith(Number)
 		}).from(projectShips)
 		if (shipStatsRes.length == 0) {
-			console.log(shipStatsRes)
+			logger.error("Admin stats not working!")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 		const reviewStatsRes = await db.select({ n: count(), state: projectShips.state }).from(projectShips).groupBy(projectShips.state)

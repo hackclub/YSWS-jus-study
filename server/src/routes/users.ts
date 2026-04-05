@@ -1,5 +1,4 @@
 import { zValidator } from "@hono/zod-validator";
-import type { auth } from "@server/auth";
 import db from "@server/db";
 import { addresses, hackatimeProjectLinks, projects, shopOrders, users, userStats } from "@server/db/schema";
 import hackatime from "@server/hackatime";
@@ -7,6 +6,7 @@ import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { NewAddressSchema } from "@shared/validation/addresses"
 import z from "zod";
+import type { Env } from "..";
 
 const searchSchema = z.object({
 	q: z.string().min(1).max(100),
@@ -14,23 +14,18 @@ const searchSchema = z.object({
 	offset: z.coerce.number().int().min(0).default(0),
 });
 
-export const usersRoutes = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const usersRoutes = new Hono<Env>()
 	.get("/hackatime-projects", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const res = await hackatime.userProjectDetails(user.slackId, {
 			startDate: new Date(process.env.START_DATE!),
 		})
-
 		if (!res.success) {
-			console.log(res.error)
+			logger.error({ userId: user.id }, res.error)
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
@@ -65,6 +60,7 @@ export const usersRoutes = new Hono<{
 
 	.post("/addresses", zValidator("json", NewAddressSchema), async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const data = c.req.valid("json")
@@ -74,6 +70,7 @@ export const usersRoutes = new Hono<{
 			userId: user.id
 		}).returning()
 		if (res.length == 0) {
+			logger.error({ userId: user.id, data }, "Couldn't insert address")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 

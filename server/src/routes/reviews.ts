@@ -6,13 +6,9 @@ import { and, asc, eq, getTableColumns, inArray } from "drizzle-orm";
 import { NewReviewSchema } from "@shared/validation/reviews"
 import { Hono } from "hono";
 import { bumpStatus } from "@server/lib/ships";
+import type { Env } from "..";
 
-export const reviewsRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const reviewsRoute = new Hono<Env>()
 	.get("/pending", async (c) => {
 		const categories = c.req.queries("category") as ProjectCategories[] || []
 
@@ -92,15 +88,13 @@ export const shipReviewsRoute = new Hono<{
 		if (!id) {
 			return c.json({ message: "Bad request" }, 400)
 		}
-		const res = await db.select({
+		const [ship] = await db.select({
 			ship: getTableColumns(projectShips),
 			creatorId: projects.creatorId
-		}).from(projectShips).where(eq(projectShips.id, id)).leftJoin(projects, eq(projects.id, projectShips.id))
-		if (res.length == 0) {
+		}).from(projectShips).where(eq(projectShips.id, id)).innerJoin(projects, eq(projects.id, projectShips.id))
+		if (!ship) {
 			return c.json({ message: "Ship not found" }, 404)
-		} else if (res[0]!.creatorId == null) {
-			return c.json({ message: "Something went wrong" }, 500)
-		} else if (res[0]!.creatorId != user.id && user.type == "participant") {
+		} else if (ship.creatorId != user.id && user.type == "participant") {
 			return c.json({ message: "Forbidden" }, 403)
 		}
 		const staff = user.type != "participant" /*&& res[0]!.creatorId != user.id*/
@@ -133,13 +127,6 @@ export const shipReviewsRoute = new Hono<{
 
 		const data = c.req.valid("json")
 
-		if (ship.state != data.type) {
-			return c.json({ message: "Review type does not match ship state" }, 400)
-		}
-
-		if (data.type == "pre-fraud" && user.type != "fraud" && user.type != "admin") {
-			return c.json({ message: "Forbidden" }, 403)
-		}
 
 		await db.insert(projectReviews).values({ ...data, shipId: id, reviewerId: user.id }).returning()
 		if (!data.passed) {

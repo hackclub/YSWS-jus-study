@@ -9,17 +9,15 @@ interface ProjectWithHackatime {
 	[x: string]: unknown
 }
 
-export async function sortedUserProjectTimes(slackId: string, res: ProjectWithHackatime[]): Promise<{
-	ok: true,
-	timeRec: Record<string, number>
-} | { ok: false }> {
+export async function sortedUserProjectTimes(slackId: string, res: ProjectWithHackatime[]): Promise<{ ok: true, timeRec: Record<string, number> } | { ok: false } & Omit<Exclude<Awaited<ReturnType<typeof hackatime.userStats>>, { success: true }>, "success">> {
 	const stats = await hackatime.userStats(slackId, {
 		startDate: new Date(process.env.START_DATE!),
 		features: ["projects"]
 	})
 
 	if (!stats.success) {
-		return { ok: false }
+		const { success, ...rest } = stats
+		return { ok: false, ...rest }
 	}
 
 
@@ -41,10 +39,12 @@ export async function sortedUserProjectTimes(slackId: string, res: ProjectWithHa
 
 }
 
-export async function singleProjectTime(slackId: string, links: HTLink[]): Promise<{ ok: true, time: number } | { ok: false }> {
+export async function singleProjectTime(slackId: string, links: HTLink[]): Promise<{ ok: true, time: number } |
+	{ ok: false } & Omit<Exclude<Awaited<ReturnType<typeof hackatime.userProjectDetails>>, { success: true }>, "success">> {
 	const stats = await hackatime.userProjectDetails(slackId)
 	if (!stats.success) {
-		return { ok: false }
+		const { success, ...rest } = stats
+		return { ok: false, ...rest }
 	}
 
 	const linksArray = links.map(l => l.hackatimeProjectId)

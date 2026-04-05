@@ -5,47 +5,37 @@ import { desc, eq, getTableColumns } from "drizzle-orm";
 import { Hono } from "hono";
 import { shipReviewsRoute } from "./reviews";
 import { singleProjectTime } from "@server/hackatime/client";
+import type { Env } from "..";
 
-export const shipsRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const shipsRoute = new Hono<Env>()
 	.get("/:id", async (c) => {
 		const user = c.get("user")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const id = c.req.param("id")
 
-		const res = await db.select({
+		const [ship] = await db.select({
 			ship: getTableColumns(projectShips),
 			creatorId: projects.creatorId
-		}).from(projectShips).where(eq(projectShips.id, id)).leftJoin(projects, eq(projects.id, projectShips.projectId))
-		if (res.length == 0) {
+		}).from(projectShips).where(eq(projectShips.id, id)).innerJoin(projects, eq(projects.id, projectShips.projectId))
+		if (!ship) {
 			return c.json({ message: "Ship not found" }, 404)
-		} else if (res[0]!.creatorId == null) {
-			return c.json({ message: "Something went wrong" }, 500)
-		} else if (res[0]!.creatorId != user.id && user.type == "participant") {
+		} else if (ship.creatorId != user.id && user.type == "participant") {
 			return c.json({ message: "Forbidden" }, 403)
 		}
 
 
-		return c.json({ ship: res[0]!.ship }, 200)
+		return c.json({ ship: ship.ship }, 200)
 
 	})
 	.route("/:id/reviews", shipReviewsRoute)
 
 
 
-export const projectShipRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const projectShipRoute = new Hono<Env>()
 	.post("/", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 		if (user.banned) return c.json({ message: "Forbidden" }, 403)
 		if (!user.yswsEligible) return c.json({ message: "You need to be YSWS eligible" }, 403)
@@ -107,6 +97,7 @@ export const projectShipRoute = new Hono<{
 				state: "pre-initial"
 			}).returning()
 		if (ship.length == 0) {
+			logger.error({ stats, projectId: id }, "Couldnt create ship")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
@@ -138,6 +129,7 @@ export const projectShipRoute = new Hono<{
 	})
 	.post("payout", async (c) => {
 		const user = c.get("user")
+		// const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		return c.json({ message: "Currently disabled!" }, 400)
@@ -173,6 +165,7 @@ export const projectShipRoute = new Hono<{
 		//
 		// const [uStats] = await db.select().from(userStats).where(eq(userStats.userId, user.id))
 		// if (!uStats) {
+		//  logger.error({ ship, activeShips, project }, "Couldnt find user stats")
 		// 	return c.json({ message: "Something went wrong" }, 500)
 		// }
 		//

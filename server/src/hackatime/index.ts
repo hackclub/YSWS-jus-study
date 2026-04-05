@@ -53,9 +53,7 @@ class HackatimeClient {
 
 		const parsed = ProjectDetailsResponseSchema.safeParse(body)
 		if (!parsed.success) {
-			console.log(JSON.stringify(body))
-			console.log(parsed.error)
-			return { success: false, error: "invalid response format" }
+			return { success: false, error: JSON.stringify(parsed.error) }
 		}
 
 		return parsed.data
@@ -76,8 +74,7 @@ class HackatimeClient {
 		const contentType = res.headers.get("content-type")
 		if (!contentType || !contentType.includes("application/json")) {
 			const body = await res.text()
-			console.log(body)
-			return { success: false, error: "invalid response format" }
+			return { success: false, error: "invalid response format", body }
 		}
 
 		const body = await res.json()
@@ -85,9 +82,9 @@ class HackatimeClient {
 
 		const parsed = StatsResponseSchema.safeParse(body)
 		if (!parsed.success) {
-			console.log(JSON.stringify(body))
-			console.log(parsed.error)
-			return { success: false, error: "invalid response format" }
+			return {
+				success: false, error: JSON.stringify(parsed.error)
+			}
 		}
 		return parsed.data
 

@@ -123,13 +123,8 @@ export const shopOrderRelations = relations(shopOrders, ({ one }) => ({
 	})
 }))
 
-export const reviewTypeValues = ["pre-initial", "pre-fraud"] as const
-export const reviewType = pgEnum("review_type", reviewTypeValues)
-export type ReviewType = typeof reviewType.enumValues[number]
-
 export const projectReviews = pgTable("project_reviews", {
 	createdAt: timestamp().defaultNow().notNull(),
-	type: reviewType().notNull(),
 	passed: boolean().default(false).notNull(),
 	shipId: uuid().references(() => projectShips.id, { onDelete: "cascade" }).primaryKey(),
 	comment: text().notNull(),

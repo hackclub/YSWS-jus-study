@@ -9,14 +9,22 @@ import { reviewsRoute } from "./routes/reviews";
 import { shipsRoute } from "./routes/ships";
 import { voteRoute } from "./routes/vote";
 import { adminRoute } from "./routes/admin";
+import { requestId, type RequestIdVariables } from "hono/request-id";
+import type { Logger } from "pino";
+import { logger } from "./logger";
+import { requestLogger } from "./middleware/logger";
 
-const app = new Hono<{
+
+export type Env = {
 	Variables: {
+		logger: Logger
 		user: typeof auth.$Infer.Session.user | null;
 		session: typeof auth.$Infer.Session.session | null
-	}
-}>().basePath("/api")
+	} & RequestIdVariables
+}
 
+const app = new Hono<Env>().basePath("/api")
+	.use("*", requestId())
 	.use(
 		cors({
 			origin: process.env.CORS_ORIGIN || "http://localhost:5173",
@@ -27,6 +35,7 @@ const app = new Hono<{
 			credentials: true,
 		}),
 	)
+	.use(requestLogger())
 	.use(
 		async (c, next) => {
 			const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -47,6 +56,8 @@ const app = new Hono<{
 	})
 
 	.get("/status", (c) => {
+		const l = c.get("logger")
+		l.info("wowza")
 		return c.json({ message: "Up and running!" })
 	})
 	.route("/projects", projectsRoute)
@@ -58,7 +69,7 @@ const app = new Hono<{
 	.route("/admin", adminRoute)
 
 app.onError((err, c) => {
-	console.error(`${err}`)
+	logger.error({ err, url: c.req.url })
 	return c.json({ message: "Something went wrong" }, 500)
 })
 

@@ -3,13 +3,9 @@ import db from "@server/db";
 import { projects, projectStats, users } from "@server/db/schema";
 import { and, avg, count, desc, eq, getTableColumns, ne, sql, sum } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Env } from "..";
 
-export const rankingsRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const rankingsRoute = new Hono<Env>()
 	.get("/projects", async (c) => {
 		const user = c.get("user")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)

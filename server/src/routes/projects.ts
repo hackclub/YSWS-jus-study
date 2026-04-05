@@ -10,17 +10,14 @@ import z from "zod";
 import { projectShipRoute } from "./ships";
 import { projectReviewsRoute } from "./reviews";
 import { singleProjectTime, sortedUserProjectTimes } from "@server/hackatime/client";
+import type { Env } from "..";
 
 
-export const projectsRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const projectsRoute = new Hono<Env>()
 	//get all projects
 	.get("/", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
@@ -33,6 +30,7 @@ export const projectsRoute = new Hono<{
 
 		const hackatimeRes = await sortedUserProjectTimes(user.slackId, res)
 		if (!hackatimeRes.ok) {
+			logger.error({ userId: user.id })
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
@@ -40,7 +38,7 @@ export const projectsRoute = new Hono<{
 		return c.json({
 			projects: res.map(p => {
 				const { hackatimeLinks, ...rest } = p
-				return { ...rest, timeSpent: hackatimeRes.timeRec[rest.id] || 0 }
+				return { ...rest, timeSpent: hackatimeRes.timeRec ? hackatimeRes.timeRec[rest.id] || 0 : 0 }
 			})
 		}, 200)
 	})
@@ -96,6 +94,7 @@ export const projectsRoute = new Hono<{
 	.post("/", async (c) => {
 		//no auth required for now
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		let body;
@@ -113,32 +112,33 @@ export const projectsRoute = new Hono<{
 
 		// TODO: add auto readmeLink generation
 
-		const res = await db.insert(projects).values({
+		const [project] = await db.insert(projects).values({
 			...parsed.data,
 			creatorId: user.id
 		}).returning()
-		if (res.length == 0) {
+		if (!project) {
+			logger.error({ body }, "Couldnt insert new project")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
-		return c.json({ message: "Project created", project: res[0]! }, 201)
+		return c.json({ message: "Project created", project }, 201)
 	})
 
 
 	.patch("/:id", zValidator("json", UpdateProjectRequestSchema), async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const id = c.req.param("id")
 
-		const proj = await db
+		const [project] = await db
 			.select()
 			.from(projects)
 			.where(eq(projects.id, id))
-		if (proj.length == 0) {
+		if (!project) {
 			return c.json({ message: "Ressource not found" }, 404)
 		}
-		const project = proj[0]!
 		if (project.creatorId != user.id) {
 			return c.json({ message: "Forbidden" }, 403)
 		}
@@ -148,18 +148,19 @@ export const projectsRoute = new Hono<{
 
 		// TODO: add auto readmeLink generation
 
-		const res = await db
+		const [updatedProject] = await db
 			.update(projects)
 			.set({
 				...data,
 			})
 			.where(eq(projects.id, id))
 			.returning()
-		if (res.length == 0) {
+		if (!project) {
+			logger.error({ projectId: id }, "Couldn't update project")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
-		return c.json({ message: "Project updated", project: res[0] })
+		return c.json({ message: "Project updated", updatedProject })
 	})
 
 	//link a hackatime project

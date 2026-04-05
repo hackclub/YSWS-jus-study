@@ -13,19 +13,16 @@ import { bumpStatus } from "@server/lib/ships";
 import { rankingsRoute } from "./rankings";
 import { users } from "@server/db/schema";
 import { requestFraudReview } from "@server/lib/joe";
+import type { Env } from "..";
 
 const CANDIDATE_POOL_SIZE = 50;
 export const VOTES_FOR_PAYOUT_PER_SHIP = 10;
 
-export const voteRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const voteRoute = new Hono<Env>()
 	// get session w/ matches
 	.post("/rounds", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const existing = await db.select().from(votingRounds).where(and(
@@ -64,17 +61,18 @@ export const voteRoute = new Hono<{
 		const pickedCandidates = weightedSample(candidates, 4)
 
 		const { round, roundProjects } = await db.transaction(async (tx) => {
-			const roundRes = await tx.insert(votingRounds).values({ voterId: user.id }).returning()
-			if (roundRes.length == 0) {
-				throw new Error("inserting votingRound returned nothing")
+			const [round] = await tx.insert(votingRounds).values({ voterId: user.id }).returning()
+			if (!round) {
+				logger.error({ userId: user.id }, "Couldnt create voting round")
+				tx.rollback()
+				throw new Error("Couldnt create voting round")
 			}
-			const round = roundRes[0]!
-
 
 			const roundProjects = await tx.insert(votingRoundProjects).values(pickedCandidates.map((c, i) => ({ projectId: c.projectId, position: i + 1, roundId: round.id }))).returning()
 
 			return { round, roundProjects }
 		})
+
 
 		const projectDetails = await db.select().from(projects).innerJoin(projectShips, and(
 			eq(projectShips.projectId, projects.id),
@@ -83,6 +81,7 @@ export const voteRoute = new Hono<{
 
 
 		if (projectDetails.length < 4) {
+			logger.error({ candidates, projectDetails, roundProjects })
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
@@ -243,19 +242,20 @@ export const voteRoute = new Hono<{
 	//get current session
 	.get("/rounds/active", async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
-		const existing = await db.select().from(votingRounds).where(and(
+		const [round] = await db.select().from(votingRounds).where(and(
 			eq(votingRounds.voterId, user.id),
 			isNull(votingRounds.completedAt)
 		))
-		if (existing.length == 0) {
+		if (!round) {
 			return c.json({ message: "Not found" }, 404)
 		}
-		const round = existing[0]!
 		const roundProjects = await db.select().from(votingRoundProjects).where(eq(votingRoundProjects.roundId, round.id))
 		if (roundProjects.length < 4) {
-			return c.json({ message: "Something wen't wrong" }, 500)
+			logger.error({ roundProjects, round }, "Less than 4 projects attached to vote round")
+			return c.json({ message: "Something went wrong" }, 500)
 		}
 
 		const projectDetails = await db.select().from(projects).innerJoin(projectShips, and(
@@ -263,8 +263,8 @@ export const voteRoute = new Hono<{
 			eq(projectShips.state, "voting")
 		)).where(inArray(projects.id, roundProjects.map(c => c.projectId)))
 
-
 		if (projectDetails.length < 4) {
+			logger.error({ roundProjects, round, projectDetails }, "Less than 4 project details found")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 

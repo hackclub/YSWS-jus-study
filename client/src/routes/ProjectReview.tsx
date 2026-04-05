@@ -5,7 +5,7 @@ import Button from "@client/components/Button";
 import { ArrowLeft, BookOpen, Check, Clock, GitPullRequest, Globe, Lock, X } from "lucide-react";
 import { client } from "@client/lib/api-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { ProjectCategories, ProjectShipStatus, ReviewType } from "@server/db/schema";
+import type { ProjectCategories, ProjectShipStatus } from "@server/db/schema";
 import { type InferResponseType } from "hono/client";
 import { formatDate, secondsToFormatTime } from "@client/lib/time";
 import { useErrors } from "@client/lib/context/ErrorContext";
@@ -14,7 +14,6 @@ import { useErrors } from "@client/lib/context/ErrorContext";
 type ReviewsResponse = InferResponseType<typeof client.api.projects[":id"]["reviews"]["$get"]>;
 
 type Review = Extract<ReviewsResponse, { reviews: unknown }>["reviews"][number];
-
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const CATEGORY_META: Record<ProjectCategories, { color: string; dot: string }> = {
@@ -34,6 +33,7 @@ const STATE_META: Record<ProjectShipStatus, { label: string; color: string; bg: 
 	"pre-fraud": { label: "Flagged", color: "text-amber-400", bg: "bg-amber-400" },
 	"failed": { label: "Failed", color: "text-red-400", bg: "bg-red-400" },
 	"finished": { label: "Finished", color: "text-blue-400", bg: "bg-blue-400" },
+	"pre-payout": { label: "Pre-Payout", color: "text-gray-400", bg: "bg-gray-400" }
 };
 
 // function initials(name: string): string {

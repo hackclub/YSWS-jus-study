@@ -6,18 +6,15 @@ import { singleProjectTime } from "@server/hackatime/client";
 import { NewDevlogRequestSchema } from "@shared/validation/devlogs";
 import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Env } from "..";
 
 
 
 
-export const devlogsRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const devlogsRoute = new Hono<Env>()
 	.post("/", zValidator("json", NewDevlogRequestSchema), async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 
 		const projectId = c.req.param("id")
@@ -48,6 +45,7 @@ export const devlogsRoute = new Hono<{
 
 		const stats = await singleProjectTime(user.slackId, links)
 		if (!stats.ok) {
+			logger.error({ project, data, links }, stats.error)
 			return c.json({ message: "Hackatime fetching went wrong" }, 500)
 		}
 
@@ -66,6 +64,7 @@ export const devlogsRoute = new Hono<{
 			timeSpent: diffTotalTime < 10 * 3600 ? diffTotalTime : 10 * 3600, // constrain time per log to 10h
 		}).returning()
 		if (res.length == 0) {
+			logger.error({ project, data, links, res }, "Couldnt insert devlog")
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 

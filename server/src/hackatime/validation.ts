@@ -82,6 +82,6 @@ export const ProjectDetailsResponseSchema = z.preprocess((input) => convertToUni
 export const StatsResponseSchema = z.preprocess((input) => convertToUnion(input, "data", "error"),
 	z.discriminatedUnion("success", [
 		z.object({ success: z.literal(true), data: StatsSchema }),
-		z.object({ success: z.literal(false), error: z.string() })
+		z.object({ success: z.literal(false), error: z.string(), body: z.string().optional() })
 	])
 )

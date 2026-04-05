@@ -1,20 +1,16 @@
 import { zValidator } from "@hono/zod-validator";
-import type { auth } from "@server/auth";
 import { Hono } from "hono";
 import { NewShopItemRequest, PlaceOrderRequest } from "@shared/validation/shop"
 import db from "@server/db";
 import { addresses, shopItems, shopOrders, users } from "@server/db/schema";
 import { asc, eq, getTableColumns } from "drizzle-orm";
+import type { Env } from "..";
 
 
-export const shopRoute = new Hono<{
-	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null
-	}
-}>()
+export const shopRoute = new Hono<Env>()
 	.post("/items", zValidator("json", NewShopItemRequest), async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 		if (user.type != "admin") return c.json({ message: "Forbidden" }, 403)
 
@@ -23,6 +19,7 @@ export const shopRoute = new Hono<{
 
 		const newItems = await db.insert(shopItems).values({ ...data }).returning()
 		if (newItems.length == 0) {
+			logger.error({ userId: user.id, data })
 			return c.json({ message: "Something went wrong" }, 500)
 		}
 
@@ -45,6 +42,7 @@ export const shopRoute = new Hono<{
 	})
 	.post("/orders", zValidator("json", PlaceOrderRequest), async (c) => {
 		const user = c.get("user")
+		const logger = c.get("logger")
 		if (!user) return c.json({ message: "Unauthorized" }, 401)
 		if (user.banned || !user.yswsEligible) return c.json({ message: "Forbidden" }, 403)
 
@@ -69,16 +67,19 @@ export const shopRoute = new Hono<{
 			return c.json({ message: "Order too expensive" }, 400)
 		}
 
-		await db.update(users).set({ coins: user.coins - cost }).where(eq(users.id, user.id))
+		return await db.transaction(async (tx) => {
 
-		//possible race-condition? if other request is done at the same time before cost is altered, a negative balance could be possible?
-		const placedOrder = await db.insert(shopOrders).values({ ...data, userId: user.id }).returning()
-		if (placedOrder.length == 0) {
-			return c.json({ message: "Something went wrong" }, 500)
-		}
+			await tx.update(users).set({ coins: user.coins - cost }).where(eq(users.id, user.id))
+
+			const placedOrder = await tx.insert(shopOrders).values({ ...data, userId: user.id }).returning()
+			if (placedOrder.length == 0) {
+				logger.error({ userId: user.id, data, cost, itemToOrder }, "Couldnt place order")
+				return c.json({ message: "Something went wrong" }, 500)
+			}
 
 
-		return c.json({ order: placedOrder[0]! }, 201)
+			return c.json({ order: placedOrder[0]! }, 201)
+		})
 
 	})
 	.get("/orders/:orderId", async (c) => {

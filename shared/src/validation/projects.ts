@@ -9,7 +9,7 @@ export const NewProjectRequestSchema = z.object({
 	name: z.string().nonempty(),
 	description: z.string().nonempty().optional(),
 	demoLink: z.url().optional(),
-	repository: z.url().optional(),
+	repository: z.url(),
 	readmeLink: z.url().optional(),
 	category: z.enum(projectCategoryValues)
 }).strip()
