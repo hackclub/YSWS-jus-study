@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import type { auth } from "@server/auth";
 import db from "@server/db";
-import { projects, projectShips } from "@server/db/schema/main";
+import { hackatimeProjectLinks, joeFraudReviews, projects, projectShips } from "@server/db/schema/main";
 import { projectStats, ratings, userStats, votingRoundProjects, votingRounds } from "@server/db/schema/voting";
 import { balanceCategories, calculatePayout, SIGMA_TRESHOLD, STAR_BUDGET, weightedSample } from "@server/voting";
 import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
@@ -11,6 +11,8 @@ import { uniqueEntriesEqual } from "@server/lib/arr";
 import { rating, rate, ordinal } from "openskill"
 import { bumpStatus } from "@server/lib/ships";
 import { rankingsRoute } from "./rankings";
+import { users } from "@server/db/schema";
+import { requestFraudReview } from "@server/lib/joe";
 
 const CANDIDATE_POOL_SIZE = 50;
 export const VOTES_FOR_PAYOUT_PER_SHIP = 10;
@@ -155,10 +157,55 @@ export const voteRoute = new Hono<{
 					const updatedOrdinal = ordinal(updated)
 					if (updated.sigma < SIGMA_TRESHOLD) {
 						const [ps] = await tx
-							.select({ timeLogged: projectShips.loggedTime })
+							.select({
+								id: projectShips.id,
+								timeLogged: projectShips.loggedTime
+							})
 							.from(projectShips)
 							.where(eq(projectShips.projectId, r.projectId))
 						if (!ps) {
+							tx.rollback()
+							Promise.reject()
+							return
+						}
+						const [fraudReviewInfo] = await tx.select({
+							submitter: {
+								slackId: users.slackId
+							},
+							name: projects.name,
+							codeLink: projects.repository,
+							demoLink: projects.demoLink,
+						}).from(projects)
+							.innerJoin(users, eq(users.id, projects.creatorId))
+							.where(eq(projects.id, r.projectId))
+						if (!fraudReviewInfo) {
+							tx.rollback()
+							Promise.reject()
+							return
+						}
+
+						const hackatimeProjects = await tx
+							.select({ hackatimeProject: hackatimeProjectLinks.hackatimeProjectId })
+							.from(hackatimeProjectLinks)
+							.where(eq(hackatimeProjectLinks.projectId, r.projectId))
+						if (hackatimeProjects.length == 0) {
+							tx.rollback()
+							Promise.reject()
+							return
+						}
+
+						try {
+							const res = await requestFraudReview({
+								...fraudReviewInfo,
+								demoLink: fraudReviewInfo.demoLink || undefined,
+								hackatimeProjects: hackatimeProjects.map(p => p.hackatimeProject)
+							})
+
+							await tx.insert(joeFraudReviews).values({
+								shipId: ps.id,
+								joeProjectId: res.id
+							})
+						} catch (e) {
 							tx.rollback()
 							Promise.reject()
 							return
@@ -186,6 +233,7 @@ export const voteRoute = new Hono<{
 					return c.json({ message: "Voted successfully" }, 200)
 				})
 				.catch(() => {
+					// LOG needed!
 					return c.json({ message: "Bad request" }, 400)
 				})
 		})

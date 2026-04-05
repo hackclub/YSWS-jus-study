@@ -13,7 +13,7 @@ export const projects = pgTable("projects", {
 	name: text().notNull(),
 	description: text(),
 	demoLink: text(),
-	repository: text(),
+	repository: text().notNull(),
 	readmeLink: text(),
 	category: categoryEnum().notNull(),
 	creatorId: text().references(() => users.id, { onDelete: "cascade" }).notNull()
@@ -128,14 +128,23 @@ export const reviewType = pgEnum("review_type", reviewTypeValues)
 export type ReviewType = typeof reviewType.enumValues[number]
 
 export const projectReviews = pgTable("project_reviews", {
-	id: uuid().defaultRandom().primaryKey(),
 	createdAt: timestamp().defaultNow().notNull(),
 	type: reviewType().notNull(),
 	passed: boolean().default(false).notNull(),
-	shipId: uuid().references(() => projectShips.id, { onDelete: "cascade" }).notNull(),
+	shipId: uuid().references(() => projectShips.id, { onDelete: "cascade" }).primaryKey(),
 	comment: text().notNull(),
 	note: text(),
 	reviewerId: text().references(() => users.id).notNull()
+})
+
+
+export const joeFraudReviews = pgTable("joe_fraud_reviews", {
+	createdAt: timestamp().defaultNow().notNull(),
+	finishedAt: timestamp(),
+	shipId: uuid().references(() => projectShips.id, { onDelete: "cascade" }).primaryKey(),
+	joeProjectId: uuid().notNull(),
+	confidence: integer(),
+	passed: boolean()
 })
 
 export const projectReviewRelations = relations(projectReviews, ({ one }) => ({
