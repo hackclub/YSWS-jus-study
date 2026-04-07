@@ -41,6 +41,7 @@ SPACES_ACC_CODE=SPACES_ACC_CODE
 SPACES_DEVLOG_ATT_SPACE_ID=ID_TO_YOUR_DEVLOG_ATTACHMENT_SPACE
 ```
 For a guide on how to setup spaces see [this](https://github.com/vividsystem/spaces/blob/master/README.md)
+The origins you set up in the env file of spaces should point to the backend of this. not the frontend. i would also recommend not allowing any routes trough to the internet other than `/api/files/:space_id/download` as otherwise random users could safe stuff on your system.
 Right now the web ui doesn't work because I concentrated on updating the backend to work with this instead of also updating the web. Therefore you will have to create the space via a POST request to `/api/spaces`
 It should have a body like this:
 ```json
