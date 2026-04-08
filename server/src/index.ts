@@ -58,7 +58,6 @@ const app = new Hono<Env>().basePath("/api")
 
 	.get("/status", (c) => {
 		const l = c.get("logger")
-		l.info("wowza")
 		return c.json({ message: "Up and running!" })
 	})
 	.route("/projects", projectsRoute)
