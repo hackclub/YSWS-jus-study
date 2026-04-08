@@ -13,10 +13,10 @@ const rewardItems = [
 	{ src: "/reward/macbook.png", label: "Laptop Grant" },
 	{ src: "/reward/notebook.png", label: "Notebook" },
 	{ src: "/reward/rubberduck.png", label: "Rubber Duck" },
-	{ src: "/reward/stationary.png", label: "Stationary Grant" },
+	{ src: "/reward/stationary.png", label: "Stationery Grant" },
 	{ src: "/reward/apple-pencil.png", label: "Stylus Grant" },
 	{ src: "/reward/ipad.png", label: "Tablet Grant" },
-	{ src: "/reward/codecrafters.png", label: "Code Crafters Membership" },
+	{ src: "/reward/codecrafters.svg", label: "Code Crafters Membership" },
 ] as const;
 
 const LandingContent = () => (
@@ -72,7 +72,7 @@ const SponsorsBanner = () => (
 			</a>
 			<a href="https://codecrafters.io" className="flex flex-col items-center justify-between gap-4">
 				<div className="flex items-center justify-center h-full">
-					<img src="/CodeCrafters.png" className="" />
+					<img src="/reward/codecrafters.svg" className="lg:size-64 md:size-32 text-white" />
 				</div>
 				<h3 className="2xl:text-6xl text-light-brown">CodeCrafters</h3>
 			</a>
