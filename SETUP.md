@@ -1,4 +1,7 @@
 # Setup 
+
+
+## Local
 1. Clone the repo (yeah obviously)
 ```bash
 git clone https://github.com/vividsystem/jusstudy.git
@@ -26,6 +29,7 @@ VITE_SPACES_URL=http://localhost:6570 # the host of your spaces instance
 > Set up .env for the server
 paste the following into `server/.env`:
 adjust the base origin to the url that you are going to expose
+to make a strong secret you can use something like: `openssl rand -base64 32`
 ```env
 CORS_ORIGIN=http://localhost:5173
 DATABASE_URL=your_database_url
@@ -54,8 +58,13 @@ It should have a body like this:
 ```
 The request will return the space id you need for the env variable, the SPACES_ACC_CODE is the same code you supply in the reuqest
 
-## Development
+4. Build
+```bash
+bun run build
+```
 
+### Local Development
+(follow steps 1 to 3 from Local)
 ```bash
 # Run all workspaces in development mode with Turbo
 
@@ -75,25 +84,19 @@ bun run type-check
 bun run test
 ```
 
-## Building
-
-```bash
-# Build all workspaces with Turbo
-bun run build
-
-# Or build individual workspaces directly
-bun run build:client  # Build the React frontend
-bun run build:server  # Build the Hono backend
-```
-
 
 ## Databases
-You can use drizzle-kit to migrate the db. the `push` command probably wont work
+You can use drizzle-kit with `push` or `migrate` (may not work due to custom migrations) or use the sql-files
 
 ## Deployment
 ### Docker
 The `server/.env` variables still have to be set.
-`sudo docker compose up backend --build -d`
+This project uses [Docker Hardened Images](dhi.io). Therefore you will have to authenticate with your docker account.
+As a password in the cli you can put Dockers Personal Access Tokens
+```bash
+docker login dhi.io # if you aren't already logged in
+docker compose up backend --build -d
+```
 ### Cloudflare
 1. Do this
 ```bash
