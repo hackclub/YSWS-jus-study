@@ -3,7 +3,6 @@ import ProjectCard from "@client/components/ProjectCard";
 import { client } from "@client/lib/api-client";
 import { authClient } from "@client/lib/auth-client";
 import { useErrors } from "@client/lib/context/ErrorContext";
-import { getSpaceFileURL } from "@client/lib/spaces";
 import { formatDate, secondsToFormatTime } from "@client/lib/time";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { InferResponseType } from "hono";
@@ -57,7 +56,7 @@ export function DevlogCard({ devlog }: { devlog: Devlogs[number] }) {
 			{devlog.attachments.length != 0 && (
 				<div key={current} className="relative group rounded-lg overflow-hidden border border-gray-200 w-full">
 					<img
-						src={getSpaceFileURL(devlog.attachments[current]!.spaceFileId)}
+						src={devlog.attachments[current]!.cdnURL}
 						className={"w-full aspect-auto object-fill"}
 					/>
 

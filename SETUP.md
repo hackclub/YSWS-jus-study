@@ -23,7 +23,6 @@ for prod change the client and server urls to the urls where the front- and back
 VITE_CLIENT_URL=http://localhost:5173
 VITE_SERVER_URL=http://localhost:3000
 VITE_HIDE_LOGIN=yes # if you want to disable login
-VITE_SPACES_URL=http://localhost:6570 # the host of your spaces instance
 ```
 
 > Set up .env for the server
@@ -40,9 +39,7 @@ START_DATE=2026-04-08
 JOE_API_KEY=JOE_API_KEY
 JOE_EVENT_ID=JOE_EVENT_ID
 GRAFANA_LOKI_HOST=GRAFANA_HOST
-SPACES_URL=SPACES_HOST
-SPACES_ACC_CODE=SPACES_ACC_CODE
-SPACES_DEVLOG_ATT_SPACE_ID=ID_TO_YOUR_DEVLOG_ATTACHMENT_SPACE
+HACKCLUB_CDN_API_KEY=YOUR_API_KEY
 ```
 For a guide on how to setup spaces see [this](https://github.com/vividsystem/spaces/blob/master/README.md)
 The origins you set up in the env file of spaces should point to the backend of this. not the frontend. i would also recommend not allowing any routes trough to the internet other than `/api/files/:space_id/download` as otherwise random users could safe stuff on your system.

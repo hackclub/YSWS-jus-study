@@ -53,7 +53,7 @@ export const devlogs = pgTable("project_devlogs", {
 
 export const devlogAttachments = pgTable("devlog_attachments", {
 	createdAt: timestamp().defaultNow().notNull(),
-	spaceFileId: uuid().notNull().primaryKey(), //no auto-gen
+	cdnURL: text().primaryKey(), //no auto-gen
 	devlogId: uuid().references(() => devlogs.id, { onDelete: "cascade" }).notNull()
 })
 export const devlogAttachmentsRelations = relations(devlogAttachments, ({ one }) => ({
