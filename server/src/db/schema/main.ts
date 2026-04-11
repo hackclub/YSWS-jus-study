@@ -2,7 +2,7 @@ import { boolean, integer, pgEnum, pgTable, primaryKey, text, timestamp, uuid } 
 import { users } from "./auth";
 import { relations } from "drizzle-orm";
 
-export const projectCategoryValues = ["CAD", "Game Development", "Web Development", "PCB Design", "Art", "Music", "App Development", "Desktop App Development"] as const
+export const projectCategoryValues = ["CAD", "Game Development", "Web Development", "PCB Design", "App Development", "Desktop App Development"] as const
 export const categoryEnum = pgEnum("category", projectCategoryValues)
 
 export type ProjectCategories = typeof categoryEnum.enumValues[number]
