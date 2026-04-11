@@ -1,4 +1,7 @@
 # Setup 
+
+
+## Local
 1. Clone the repo (yeah obviously)
 ```bash
 git clone https://github.com/vividsystem/jusstudy.git
@@ -20,12 +23,12 @@ for prod change the client and server urls to the urls where the front- and back
 VITE_CLIENT_URL=http://localhost:5173
 VITE_SERVER_URL=http://localhost:3000
 VITE_HIDE_LOGIN=yes # if you want to disable login
-VITE_SPACES_URL=http://localhost:6570 # the host of your spaces instance
 ```
 
 > Set up .env for the server
 paste the following into `server/.env`:
 adjust the base origin to the url that you are going to expose
+to make a strong secret you can use something like: `openssl rand -base64 32`
 ```env
 CORS_ORIGIN=http://localhost:5173
 DATABASE_URL=your_database_url
@@ -36,9 +39,7 @@ START_DATE=2026-04-08
 JOE_API_KEY=JOE_API_KEY
 JOE_EVENT_ID=JOE_EVENT_ID
 GRAFANA_LOKI_HOST=GRAFANA_HOST
-SPACES_URL=SPACES_HOST
-SPACES_ACC_CODE=SPACES_ACC_CODE
-SPACES_DEVLOG_ATT_SPACE_ID=ID_TO_YOUR_DEVLOG_ATTACHMENT_SPACE
+HACKCLUB_CDN_API_KEY=YOUR_API_KEY
 ```
 For a guide on how to setup spaces see [this](https://github.com/vividsystem/spaces/blob/master/README.md)
 The origins you set up in the env file of spaces should point to the backend of this. not the frontend. i would also recommend not allowing any routes trough to the internet other than `/api/files/:space_id/download` as otherwise random users could safe stuff on your system.
@@ -54,8 +55,13 @@ It should have a body like this:
 ```
 The request will return the space id you need for the env variable, the SPACES_ACC_CODE is the same code you supply in the reuqest
 
-## Development
+4. Build
+```bash
+bun run build
+```
 
+### Local Development
+(follow steps 1 to 3 from Local)
 ```bash
 # Run all workspaces in development mode with Turbo
 
@@ -75,20 +81,9 @@ bun run type-check
 bun run test
 ```
 
-## Building
-
-```bash
-# Build all workspaces with Turbo
-bun run build
-
-# Or build individual workspaces directly
-bun run build:client  # Build the React frontend
-bun run build:server  # Build the Hono backend
-```
-
 
 ## Databases
-You can use drizzle-kit to migrate the db. the `push` command probably wont work
+You can use drizzle-kit with `push` or `migrate` (may not work due to custom migrations) or use the sql-files
 
 ## Deployment
 ### Docker

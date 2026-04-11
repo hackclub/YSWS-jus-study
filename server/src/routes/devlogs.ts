@@ -3,10 +3,10 @@ import db from "@server/db";
 import { devlogAttachments, devlogs, hackatimeProjectLinks, projects } from "@server/db/schema";
 import { singleProjectTime } from "@server/hackatime/client";
 import { NewDevlogRequestSchema } from "@shared/validation/devlogs";
-import { desc, eq, getTableColumns, inArray } from "drizzle-orm";
+import { desc, eq, getTableColumns } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Env } from "..";
-import { uploadDevlogAttachmentToSpaces } from "@server/lib/spaces";
+import { uploadDevlogAttachmentToCDN } from "@server/lib/cdn";
 import { bodyLimit } from "hono/body-limit";
 import { MAX_FILE_SIZE } from "@shared/vars";
 import z from "zod";
@@ -56,14 +56,11 @@ export const devlogsRoute = new Hono<Env>()
 				return c.json({ message: "Invalid file types" }, 400)
 			}
 
-			const res = await uploadDevlogAttachmentToSpaces(files)
-			if ("message" in res) {
-				logger.error({ error_id: res.error_id }, res.message)
-				return c.json({ message: "Something went wrong" }, 500)
-			}
+
+			const res = await uploadDevlogAttachmentToCDN(files)
 
 			await db.insert(devlogAttachments).values(res.map((sf) => ({
-				spaceFileId: sf.id,
+				cdnURL: sf.url,
 				devlogId: devlog.d.id
 			})))
 
