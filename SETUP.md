@@ -88,12 +88,7 @@ You can use drizzle-kit with `push` or `migrate` (may not work due to custom mig
 ## Deployment
 ### Docker
 The `server/.env` variables still have to be set.
-This project uses [Docker Hardened Images](dhi.io). Therefore you will have to authenticate with your docker account.
-As a password in the cli you can put Dockers Personal Access Tokens
-```bash
-docker login dhi.io # if you aren't already logged in
-docker compose up backend --build -d
-```
+`sudo docker compose up backend --build -d`
 ### Cloudflare
 1. Do this
 ```bash
