@@ -148,9 +148,10 @@ function FAQ() {
 				</p>)} />
 				<FAQSection question="How much does it cost?" answer={(<p>100% free - all the prizes are donated to us or paid for by us! (customs might occur)</p>)} />
 				<FAQSection question="Am I eligible to participate?" answer={(<p>Jus'STUDY is for high schoolers! You need to be 13-18 years old to participate.</p>)} />
-				<FAQSection question="When will this end?" answer={(<p>Jus'STUDY will run until the 20th of April 2026</p>)} />
+				<FAQSection question="When will this end?" answer={(<p>Jus'STUDY will run until the 20th of May 2026 (for now)</p>)} />
 				<FAQSection question="I am a beginner can I still participate?" answer={(<p>Yes! We also have guides available to help you learn new topics</p>)} />
 				<FAQSection question="How will I track my time?" answer={(<div>We use <a href="https://hackatime.hackclub.com/" className="underline underline-offset-2">Hackatime</a>.</div>)} />
+				<FAQSection question="How will I track my hardware time?" answer={(<div>You can use <a href="https://lapse.hackclub.com/" className="underline underline-offset-2">Lapse</a>.</div>)} />
 				<FAQSection question="What is HackClub?" answer={(<p>Hack Club is a 501(c)(3) nonprofit and network of 60k+ technical high schoolers.</p>)} />
 			</div>
 
