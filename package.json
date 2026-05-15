@@ -22,7 +22,10 @@
     "lint": "TURBO_TELEMTRY_DISABLED=1 turbo lint",
     "type-check": "TURBO_TELEMTRY_DISABLED=1 turbo type-check",
     "test": "TURBO_TELEMTRY_DISABLED=1 turbo test",
-    "_postinstall": "TURBO_TELEMTRY_DISABLED=1 turbo build --filter=shared --filter=server"
+    "_postinstall": "TURBO_TELEMTRY_DISABLED=1 turbo build --filter=shared --filter=server",
+    "docs:dev": "cd client && bun run docs:dev",
+    "docs:build": "cd client && bun run docs:build",
+    "docs:preview": "cd client && bun run docs:preview"
   },
   "keywords": [
     "bun",
@@ -33,17 +36,17 @@
     "turbo"
   ],
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260417.1",
+    "@cloudflare/workers-types": "^4.20260429.1",
     "bun-types": "latest",
     "turbo": "^2.9.6",
-    "wrangler": "^4.83.0"
+    "wrangler": "^4.86.0"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "better-auth": "^1.6.5",
-    "hono": "^4.12.14",
+    "better-auth": "^1.6.9",
+    "hono": "^4.12.15",
     "zod": "^4.3.6"
   }
 }
