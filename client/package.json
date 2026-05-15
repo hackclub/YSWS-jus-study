@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && bun run docs:build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs:dev": "vocs dev",
+    "docs:build": "vocs build && mkdir dist/docs && cp -r docs/dist/* dist/docs/",
+    "docs:preview": "vocs preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
@@ -18,7 +21,8 @@
     "react-router": "^7.14.1",
     "server": "workspace:*",
     "shared": "workspace:*",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "vocs": "^1.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
